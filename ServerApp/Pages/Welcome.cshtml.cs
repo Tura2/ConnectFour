@@ -31,7 +31,7 @@ namespace ServerApp.Pages
             var newGame = new Game
             {
                 PlayerId = Id,
-                StartTime = DateTime.Now,
+                StartTime = DateTime.UtcNow,
                 Duration = TimeSpan.Zero,
                 Moves = string.Empty,
                 Winner = null

@@ -95,7 +95,38 @@ namespace ServerApp.WebApiCoreManagement
             _context.Moves.Add(playerMove);
             _context.SaveChanges();
 
-            // Choose random column for opponent
+            // Get the game entity for updates
+            var game = _context.Games.First(g => g.Id == dto.GameId);
+
+            // ---- 1. CHECK IF PLAYER WON ----
+            if (CheckForWinner(dto.GameId, dto.PlayerId))
+            {
+                game.Duration = DateTime.UtcNow - game.StartTime;
+                game.Winner = $"Player {dto.PlayerId} win";
+                _context.SaveChanges();
+                return Ok(new
+                {
+                    result = "PlayerWin",
+                    yourMove = new { row = dto.Row, column = dto.Column },
+                    opponentMove = (object)null
+                });
+            }
+
+            // ---- 2. CHECK IF BOARD IS FULL (DRAW) ----
+            if (BoardIsFull(dto.GameId))
+            {
+                game.Duration = DateTime.UtcNow - game.StartTime;
+                game.Winner = "No winner";
+                _context.SaveChanges();
+                return Ok(new
+                {
+                    result = "Draw",
+                    yourMove = new { row = dto.Row, column = dto.Column },
+                    opponentMove = (object)null
+                });
+            }
+
+            // ---- 3. COMPUTER/Opponent MOVE ----
             var rand = new Random();
             int oppCol;
             do
@@ -108,7 +139,7 @@ namespace ServerApp.WebApiCoreManagement
                 .Where(m => m.GameId == dto.GameId && m.Column == oppCol)
                 .Select(m => m.Row)
                 .ToHashSet();
-            int oppRow = Enumerable.Range(0, Rows)                                  
+            int oppRow = Enumerable.Range(0, Rows)
                 .Reverse()
                 .First(r => !usedRows.Contains(r));
 
@@ -124,13 +155,81 @@ namespace ServerApp.WebApiCoreManagement
             _context.Moves.Add(compMove);
             _context.SaveChanges();
 
-            // Return both moves
+            // ---- 4. CHECK IF COMPUTER WON ----
+            int computerId = compMove.PlayerId;
+            if (CheckForWinner(dto.GameId, computerId))
+            {
+                game.Duration = DateTime.UtcNow - game.StartTime;
+                game.Winner = "Computer win";
+                _context.SaveChanges();
+                return Ok(new
+                {
+                    result = "ComputerWin",
+                    yourMove = new { row = dto.Row, column = dto.Column },
+                    opponentMove = new { row = oppRow, column = oppCol }
+                });
+            }
+
+            // ---- 5. CHECK IF BOARD IS FULL (DRAW) ----
+            if (BoardIsFull(dto.GameId))
+            {
+                game.Duration = DateTime.UtcNow - game.StartTime;
+                game.Winner = "No winner";
+                _context.SaveChanges();
+                return Ok(new
+                {
+                    result = "Draw",
+                    yourMove = new { row = dto.Row, column = dto.Column },
+                    opponentMove = new { row = oppRow, column = oppCol }
+                });
+            }
+
+            // ---- 6. If game still ongoing, return both moves ----
             return Ok(new
             {
+                result = "Continue",
                 yourMove = new { row = dto.Row, column = dto.Column },
                 opponentMove = new { row = oppRow, column = oppCol }
             });
         }
+
+        private bool CheckForWinner(int gameId, int playerId)
+        {
+            // Build board from DB moves
+            var moves = _context.Moves.Where(m => m.GameId == gameId).ToList();
+            int[,] board = new int[Rows, Columns];
+
+            foreach (var move in moves)
+                board[move.Row, move.Column] = move.PlayerId;
+
+            // Horizontal
+            for (int r = 0; r < Rows; r++)
+                for (int c = 0; c <= Columns - 4; c++)
+                    if (board[r, c] == playerId && board[r, c + 1] == playerId && board[r, c + 2] == playerId && board[r, c + 3] == playerId)
+                        return true;
+            // Vertical
+            for (int c = 0; c < Columns; c++)
+                for (int r = 0; r <= Rows - 4; r++)
+                    if (board[r, c] == playerId && board[r + 1, c] == playerId && board[r + 2, c] == playerId && board[r + 3, c] == playerId)
+                        return true;
+            // Diagonal down-right
+            for (int r = 0; r <= Rows - 4; r++)
+                for (int c = 0; c <= Columns - 4; c++)
+                    if (board[r, c] == playerId && board[r + 1, c + 1] == playerId && board[r + 2, c + 2] == playerId && board[r + 3, c + 3] == playerId)
+                        return true;
+            // Diagonal down-left
+            for (int r = 0; r <= Rows - 4; r++)
+                for (int c = 3; c < Columns; c++)
+                    if (board[r, c] == playerId && board[r + 1, c - 1] == playerId && board[r + 2, c - 2] == playerId && board[r + 3, c - 3] == playerId)
+                        return true;
+            return false;
+        }
+        private bool BoardIsFull(int gameId)
+        {
+            var moves = _context.Moves.Where(m => m.GameId == gameId).ToList();
+            return moves.Count >= Rows * Columns;
+        }
+
 
         private bool ColumnIsFull(int gameId, int column)
         {

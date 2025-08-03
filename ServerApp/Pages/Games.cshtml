@@ -40,8 +40,12 @@
                 {
                     <tr class="even:bg-indigo-50 hover:bg-indigo-100">
                         <td class="py-2 px-5">@g.Id</td>
-                        <td class="py-2 px-5">@g.StartTime</td>
-                        <td class="py-2 px-5">@g.Duration</td>
+                        <td class="py-2 px-5">
+                            @(g.StartTime.AddHours(3).ToString("dd/MM/yyyy HH:mm:ss"))
+                        </td>
+                        <td class="py-2 px-5">
+                            @(g.Duration.ToString(@"mm\:ss\.fff"))
+                        </td>
                         <td class="py-2 px-5">@g.Winner</td>
                     </tr>
                 }

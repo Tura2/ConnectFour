@@ -482,6 +482,12 @@ namespace ClientApp
                 {
                     return;
                 }
+                if (oppEl.ValueKind == JsonValueKind.Null)
+                {
+                    // No opponent move in this response, e.g. game ended
+                    return;
+                }
+
 
                 // Get the row
                 if (!oppEl.TryGetProperty("row", out JsonElement rowEl) &&
