@@ -1,0 +1,90 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Configuration;
+using ServerApp.Data;
+using ServerApp.Models;
+using System.Diagnostics;
+
+namespace ServerApp.Pages
+{
+    public class WelcomeModel : PageModel
+    {
+        private readonly ConnectFourContext _context;
+        private readonly IConfiguration _config;
+
+        public WelcomeModel(ConnectFourContext context, IConfiguration config)
+        {
+            _context = context;
+            _config = config;
+        }
+
+        [BindProperty(SupportsGet = true)]
+        public int Id { get; set; } // PlayerId
+
+        public IActionResult OnPostPlay()
+        {
+            // 1. צור משחק חדש ושמור ב־DB
+            var newGame = new Game
+            {
+                PlayerId = Id,
+                StartTime = DateTime.Now,
+                Duration = TimeSpan.Zero,
+                Moves = string.Empty,
+                Winner = null
+            };
+            _context.Games.Add(newGame);
+            _context.SaveChanges();
+
+            int gameId = newGame.Id;
+
+            // 2. מצא את ה-exe (או config override)
+            var exePath = GetClientAppExePath();
+            if (exePath == null)
+            {
+                // הוסף שגיאה שתוצג למשתמש
+                ModelState.AddModelError(string.Empty,
+                    "ClientApp.exe לא נמצא. בדוק שהרצת Build לפרויקט ClientApp או הגדרת הנתיב ב-appsettings.json.");
+                return Page();
+            }
+
+            // 3. הפעל את הלקוח
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = exePath,
+                    Arguments = $"{gameId} {Id}",
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError(string.Empty, $"שגיאה בהפעלה: {ex.Message}");
+            }
+
+            return Page();
+        }
+
+        private string? GetClientAppExePath()
+        {
+            // 2A. נסיון ראשון: קונפיגורציה
+            var custom = _config["ClientApp:CustomExePath"];
+            if (!string.IsNullOrWhiteSpace(custom) && System.IO.File.Exists(custom))
+                return custom;
+
+            // 2B. עלה עד 8 ספריות ומצא בתיקיית ClientApp
+            var dir = new DirectoryInfo(Directory.GetCurrentDirectory());
+            for (int i = 0; i < 8; i++)
+            {
+                var candidate = Path.Combine(
+                    dir.FullName,
+                    "ClientApp", "bin", "Debug", "net8.0-windows", "ClientApp.exe");
+                if (System.IO.File.Exists(candidate))
+                    return candidate;
+                dir = dir.Parent ?? dir;
+            }
+
+            return null;
+        }
+    }
+}

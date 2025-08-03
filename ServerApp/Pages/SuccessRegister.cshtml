@@ -1,0 +1,14 @@
+﻿@page
+@using Microsoft.AspNetCore.Mvc.RazorPages
+@model ServerApp.Pages.SuccessRegisterModel
+@{
+    ViewData["Title"] = "Registration Success";
+}
+
+<h2>Registration Successful ✅</h2>
+<p>Thank you for registering. You can now start playing Connect Four!</p>
+
+<div class="mt-4">
+    <a class="btn btn-primary me-2" asp-page="/Register">Register Another Player</a>
+    <a class="btn btn-success" asp-page="/Login">Login</a>
+</div>

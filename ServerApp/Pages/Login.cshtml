@@ -1,0 +1,27 @@
+﻿@page
+@model ServerApp.Pages.LoginModel
+@{
+    ViewData["Title"] = "Login";
+}
+
+<h2>Login</h2>
+
+<form method="post" class="mt-4">
+
+    <div class="mb-3">
+        <label asp-for="PlayerId" class="form-label">Player ID</label>
+        <input asp-for="PlayerId" class="form-control" type="number" min="1" max="1000" />
+        <span asp-validation-for="PlayerId" class="text-danger"></span>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger">@Model.ErrorMessage</div>
+    }
+
+    <button type="submit" class="btn btn-success">Login</button>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

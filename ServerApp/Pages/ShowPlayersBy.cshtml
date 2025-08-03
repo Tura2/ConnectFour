@@ -1,0 +1,146 @@
+﻿@page
+@model ServerApp.Pages.ShowPlayersByModel
+@{
+    ViewData["Title"] = "All Players";
+}
+
+<h2>All Registered Players</h2>
+
+<p>
+    Sort by name:
+    <a asp-page="/ShowPlayersBy" asp-route-sortOrder="asc">Ascending</a> |
+    <a asp-page="/ShowPlayersBy" asp-route-sortOrder="desc">Descending</a>
+</p>
+
+<p>
+    Select a player to view their games:
+    <form method="get">
+        <select name="selectedPlayerId" onchange="this.form.submit()">
+            @foreach (var player in Model.Players)
+            {
+                if (Model.SelectedPlayerId == player.Id)
+                {
+                    <option value="@player.Id" selected>@player.FirstName</option>
+                }
+                else
+                {
+                    <option value="@player.Id">@player.FirstName</option>
+                }
+            }
+        </select>
+        <input type="hidden" name="sortOrder" value="@Model.SortOrder" />
+    </form>
+</p>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>ID</th>
+            <th>Phone</th>
+            <th>Country</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var player in Model.Players)
+        {
+            <tr>
+                <td>@player.FirstName</td>
+                <td>@player.Id</td>
+                <td>@player.Phone</td>
+                <td>@player.Country</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@if (Model.SelectedPlayer != null)
+{
+    <h3>Games for @Model.SelectedPlayer.FirstName</h3>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Game ID</th>
+                <th>Start Time</th>
+                <th>Duration</th>
+                <th>Winner</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var game in Model.Games)
+            {
+                <tr>
+                    <td>@game.Id</td>
+                    <td>@game.StartTime</td>
+                    <td>@game.Duration</td>
+                    <td>@game.Winner</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (Model.PlayersWithLastGame.Any())
+{
+    <h3>Players with Last Game Info</h3>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Player</th>
+                <th>Last Game Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.PlayersWithLastGame)
+            {
+                <tr>
+                    <td>@item.PlayerName</td>
+                    <td>@(item.LastGame?.ToString("g") ?? "No games")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (Model.PlayersWithGameCount.Any())
+{
+    <h3>Players Ranked by Number of Games</h3>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Player</th>
+                <th>Number of Games</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.PlayersWithGameCount)
+            {
+                <tr>
+                    <td>@item.PlayerName</td>
+                    <td>@item.GameCount</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+@if (Model.PlayersPerCountry.Any())
+{
+    <h3>Players Grouped by Country</h3>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Country</th>
+                <th>Number of Players</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.PlayersPerCountry)
+            {
+                <tr>
+                    <td>@item.Country</td>
+                    <td>@item.Count</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

@@ -1,0 +1,14 @@
+﻿@page "{id:int}"
+@model ServerApp.Pages.WelcomeModel
+@{
+    ViewData["Title"] = "Welcome";
+}
+
+<h2>Welcome, Player @Model.Id!</h2>
+<p>What would you like to do?</p>
+
+<form method="post">
+    <button type="submit" asp-page-handler="Play" class="btn btn-success">Play 🎮</button>
+    <button type="submit" asp-page-handler="Search" class="btn btn-secondary">Search 🔍</button>
+    <button type="submit" asp-page-handler="Logout" class="btn btn-danger">Logout 🚪</button>
+</form>

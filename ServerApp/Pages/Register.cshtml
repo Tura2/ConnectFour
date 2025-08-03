@@ -1,0 +1,43 @@
+﻿@page
+@model ServerApp.Pages.Register
+@{
+    ViewData["Title"] = "Player Registration";
+}
+
+<h2>Player Registration</h2>
+
+<form method="post" class="mt-4">
+    <!-- הצגת כל השגיאות הכלליות -->
+    <div asp-validation-summary="All" class="text-danger"></div>
+
+    <div class="mb-3">
+        <label asp-for="Player.FirstName" class="form-label"></label>
+        <input asp-for="Player.FirstName" class="form-control" />
+        <span asp-validation-for="Player.FirstName" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Player.Id" class="form-label"></label>
+        <input asp-for="Player.Id" class="form-control" type="number" min="1" max="1000" />
+        <span asp-validation-for="Player.Id" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Player.Phone" class="form-label"></label>
+        <input asp-for="Player.Phone" class="form-control" />
+        <span asp-validation-for="Player.Phone" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Player.Country" class="form-label"></label>
+        <select asp-for="Player.Country" asp-items="new SelectList(Model.Countries)" class="form-select"></select>
+        <span asp-validation-for="Player.Country" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Register</button>
+</form>
+
+@section Scripts {
+    <!-- חובה בשביל שיהיה validation בצד לקוח -->
+    <partial name="_ValidationScriptsPartial" />
+}

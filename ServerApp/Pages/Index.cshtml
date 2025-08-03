@@ -1,0 +1,30 @@
+﻿@page
+@model IndexModel
+
+@{
+    ViewData["Title"] = "Home";
+}
+
+<div class="py-5 text-center">
+    <h1 class="display-3 fw-bold mb-3">Connect Four</h1>
+    <p class="lead text-muted mb-4">
+        Welcome to Connect Four — a classic connection game built with ASP.NET Core Razor Pages and a WinForms client.
+    </p>
+
+    <div class="mx-auto mb-5" style="max-width: 600px;">
+        <div class="ratio ratio-16x9 bg-light border rounded d-flex align-items-center justify-content-center">
+            <img src="~/images/board-screenshot.jpg"
+                 alt="Connect Four Board Screenshot"
+                 class="img-fluid h-100 w-100 object-fit-cover" />
+        </div>
+    </div>
+
+    <div class="container">
+        <h2 class="h4 fw-semibold mb-3">Getting Started</h2>
+        <ul class="list-unstyled">
+            <li><strong>Register</strong> a new player account.</li>
+            <li><strong>Log in</strong> with your ID and phone.</li>
+            <li>Create a <strong>game</strong> and start dropping discs.</li>
+        </ul>
+    </div>
+</div>
