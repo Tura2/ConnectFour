@@ -4,6 +4,10 @@ using Microsoft.Extensions.Configuration;
 using ServerApp.Data;
 using ServerApp.Models;
 using System.Diagnostics;
+using System.Threading.Tasks;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 namespace ServerApp.Pages
 {
@@ -65,6 +69,7 @@ namespace ServerApp.Pages
             return Page();
         }
 
+
         private string? GetClientAppExePath()
         {
             // 2A. נסיון ראשון: קונפיגורציה
@@ -85,6 +90,14 @@ namespace ServerApp.Pages
             }
 
             return null;
+        }
+        public async Task<IActionResult> OnPostLogoutAsync()
+        {
+            // 1. Sign the user out (removes the auth cookie)
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+            // 2. Redirect back to the public Home page
+            return RedirectToPage("Index");
         }
     }
 }

@@ -5,10 +5,21 @@
     ViewData["Title"] = "Registration Success";
 }
 
-<h2>Registration Successful ✅</h2>
-<p>Thank you for registering. You can now start playing Connect Four!</p>
+<div class="max-w-lg mx-auto bg-white/90 rounded-2xl shadow-xl mt-20 p-10 text-center">
+    <h2 class="text-3xl font-bold text-green-600 mb-4 flex items-center justify-center gap-2">
+        Registration Successful
+        <span aria-hidden="true">✅</span>
+    </h2>
+    <p class="text-lg text-gray-700 mb-8">Thank you for registering.<br />You can now start playing Connect Four!</p>
 
-<div class="mt-4">
-    <a class="btn btn-primary me-2" asp-page="/Register">Register Another Player</a>
-    <a class="btn btn-success" asp-page="/Login">Login</a>
+    <div class="flex flex-col sm:flex-row justify-center gap-4 mt-4">
+        <a class="w-full sm:w-auto px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-lg shadow transition"
+           asp-page="/Register">
+            Register Another Player
+        </a>
+        <a class="w-full sm:w-auto px-6 py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold text-lg shadow transition"
+           asp-page="/Login">
+            Login
+        </a>
+    </div>
 </div>

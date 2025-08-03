@@ -5,9 +5,11 @@ using ServerApp.Data;
 using ServerApp.Models;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ServerApp.Pages
 {
+    [Authorize]
     public class ShowPlayersByModel : PageModel
     {
         private readonly ConnectFourContext _context;
