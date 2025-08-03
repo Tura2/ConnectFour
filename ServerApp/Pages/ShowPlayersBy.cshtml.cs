@@ -18,7 +18,7 @@ namespace ServerApp.Pages
         public int? SelectedPlayerId { get; set; }
         public Player? SelectedPlayer { get; set; }
         public string SortOrder { get; set; } = "asc";
-
+        public List<Game> AllGames { get; set; } = new();
         public List<(string PlayerName, DateTime? LastGame)> PlayersWithLastGame { get; set; } = new();
         public List<(string PlayerName, int GameCount)> PlayersWithGameCount { get; set; } = new(); // ← חדש עבור 1.7.6
         public List<(string Country, int Count)> PlayersPerCountry { get; set; } = new();
@@ -33,9 +33,15 @@ namespace ServerApp.Pages
             SortOrder = sortOrder ?? "asc";
             SelectedPlayerId = selectedPlayerId;
 
-            Players = SortOrder == "desc"
-                ? _context.Players.OrderByDescending(p => p.FirstName).ToList()
-                : _context.Players.OrderBy(p => p.FirstName).ToList();
+            var query = _context.Players.AsQueryable();
+
+            if (SortOrder == "desc")
+                query = query.OrderByDescending(p => p.FirstName.ToLower());
+            else
+                query = query.OrderBy(p => p.FirstName.ToLower());
+
+            Players = query.ToList();
+
 
             if (SelectedPlayerId.HasValue)
             {
@@ -73,11 +79,16 @@ namespace ServerApp.Pages
                 .ToList();
 
             PlayersPerCountry = _context.Players
-    .GroupBy(p => p.Country)
-    .Select(g => new { Country = g.Key, Count = g.Count() })
-    .AsEnumerable()
-    .Select(g => (g.Country ?? "Unknown", g.Count))
-    .ToList();
+                .GroupBy(p => p.Country)
+                .Select(g => new { Country = g.Key, Count = g.Count() })
+                .AsEnumerable()
+                .Select(g => (g.Country ?? "Unknown", g.Count))
+                .ToList();
+
+            AllGames = _context.Games
+                .GroupBy(g => g.Id)
+                .Select(g => g.First())
+                .ToList();
         }
     }
 }
