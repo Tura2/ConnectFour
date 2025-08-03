@@ -8,13 +8,14 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Windows.Forms;
+using System.Threading.Tasks;
 
 namespace ClientApp
 {
     public partial class Form1 : Form
     {
         private readonly HttpClient httpClient;
-        private readonly int gameId;
+        private int gameId;
         private readonly int playerId;
         private readonly int myNumber = 1;
         private readonly int opponentNumber = 2;
@@ -25,6 +26,7 @@ namespace ClientApp
         private const int MarginSize = 20;
 
         private bool isMyTurn = true;
+        private bool gameOver = false;
         private bool isDropping = false;
         private bool isOpponentDropping = false;
 
@@ -50,6 +52,7 @@ namespace ClientApp
         // UI controls
         private readonly ComboBox comboGameId = new() { Width = 120 };
         private readonly Button btnRestoreGame = new() { Text = "Load" };
+        private readonly Button btnRestart = new() { Text = "Restart" };
         private readonly Label lblTurn = new();
         private readonly Label lblResult = new();
         private readonly Panel circlePlayer1 = new() { Size = new Size(20, 20) };
@@ -103,6 +106,12 @@ namespace ClientApp
             btnRestoreGame.Location = new Point(comboGameId.Right + 10, MarginSize);
             btnRestoreGame.Click += BtnRestoreGame_Click;
             Controls.Add(btnRestoreGame);
+            // 2b) Restart button next to Load
+
+            btnRestart.Location = new Point(btnRestoreGame.Right + 10, MarginSize);
+            btnRestart.Click += BtnRestart_Click;
+            Controls.Add(btnRestart);
+
 
             // 2) Header, centered on the same top Y
             lblTurn.Font = new Font("Segoe UI", 14, FontStyle.Bold);
@@ -114,6 +123,7 @@ namespace ClientApp
             lblTurn.Size = hdrSize;
             lblTurn.Location = new Point(hdrX, MarginSize);
             Controls.Add(lblTurn);
+
 
             // 3) Indicators, immediately under header
             const int circleSize = 20;
@@ -231,6 +241,33 @@ namespace ClientApp
                 MessageBox.Show($"Error restoring game: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
+        private async void BtnRestart_Click(object sender, EventArgs e)
+        {
+            bool mid = !IsBoardEmpty() && !IsGameFinished();
+            if (mid)
+            {
+                var res = MessageBox.Show(
+                    "You are in the middle of a game. Are you sure you want to restart?",
+                    "Confirm Restart",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Warning);
+                if (res != DialogResult.Yes)
+                    return;
+            }
+            await RestartGameAsync();
+        }
+        private bool IsBoardEmpty()
+        {
+            for (int r = 0; r < Rows; r++)
+                for (int c = 0; c < Columns; c++)
+                    if (board[r, c] != 0) return false;
+            return true;
+        }
+
+        private bool IsGameFinished()
+            => CheckWin(myNumber) || CheckWin(opponentNumber) || IsBoardFull();
+
         private void ClearBoardContents()
         {
             for (int r = 0; r < Rows; r++)
@@ -238,6 +275,35 @@ namespace ClientApp
                     board[r, c] = 0;
             Invalidate();
         }
+        private async Task RestartGameAsync()
+        {
+            // 1) Stop & reset any ongoing animations or restore
+            dropTimer.Stop();
+            restoreTimer.Stop();
+            isDropping = false;
+            isOpponentDropping = false;
+            dropRow = dropCol = targetRow = 0;
+            opponentDropRow = opponentDropCol = opponentTargetRow = 0;
+            restoredMoves.Clear();
+            restoreIndex = 0;
+
+            // 2) Always create a brand-new game on the server
+            gameId = await httpClient.GetFromJsonAsync<int>($"nextGame/{playerId}");
+            Text = $"Player #{playerId} - Game #{gameId} - Connect Four";
+
+            // 3) Reset turn & result UI
+            isMyTurn = true;
+            lblTurn.Text = $"Your Turn (Player {myNumber})";
+            lblResult.Text = string.Empty;
+
+            // Reset the game‐over flag so the next session is live
+            gameOver = false;
+
+            // 4) Blank out the board
+            ClearBoardContents();
+            LoadGameIds();
+        }
+
 
         private void InitializeBoard()
         {
@@ -288,6 +354,15 @@ namespace ClientApp
         {
             if (!isMyTurn || isDropping || isOpponentDropping || restoreTimer.Enabled)
                 return;
+            if (gameOver)
+            {
+                MessageBox.Show(
+                  "Game is already over.",
+                  "Info",
+                  MessageBoxButtons.OK,
+                  MessageBoxIcon.Information);
+                return;
+            }
             for (int c = 0; c < Columns; c++)
             {
                 var topRect = boardRects[0, c];
@@ -320,22 +395,21 @@ namespace ClientApp
                     dropTimer.Stop();
                     isDropping = false;
 
-                    // Always save the player's move before checking win/draw
-                    SendMoveToServer(dropRow, dropCol);
-
-                    // Check user win/draw
                     if (CheckWin(myNumber))
                     {
+                        SendMoveToServer(dropRow, dropCol, animateOpponent: false);
                         ShowResult("You win!", Color.Green);
                         return;
                     }
                     if (IsBoardFull())
                     {
+                        SendMoveToServer(dropRow, dropCol, animateOpponent: false);
                         ShowResult("It's a draw!", Color.DarkOrange);
                         return;
                     }
 
-                    // Initiate opponent drop and update turn label
+                    // 2) Otherwise, record + animate the opponent as normal:
+                    SendMoveToServer(dropRow, dropCol, animateOpponent: true);
                     lblTurn.Text = "Opponent's Turn...";
                 }
                 else
@@ -384,9 +458,10 @@ namespace ClientApp
             lblResult.Text = text;
             lblResult.ForeColor = color;
             MessageBox.Show(text);
+            gameOver = true;
         }
 
-        private async void SendMoveToServer(int row, int col)
+        private async void SendMoveToServer(int row, int col, bool animateOpponent = true)
         {
             var moveData = new { GameId = gameId, PlayerId = playerId, Row = row, Column = col };
 
@@ -424,12 +499,14 @@ namespace ClientApp
                 }
                 int oppCol = colEl.GetInt32();
 
-                // Animate the opponent's drop
-                opponentDropCol = oppCol;
-                opponentDropRow = 0;
-                opponentTargetRow = oppRow;
-                isOpponentDropping = true;
-                dropTimer.Start();
+                if (animateOpponent)
+                {
+                    opponentDropCol = oppCol;
+                    opponentDropRow = 0;
+                    opponentTargetRow = oppRow;
+                    isOpponentDropping = true;
+                    dropTimer.Start();
+                }
             }
             catch (HttpRequestException)
             {
